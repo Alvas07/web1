@@ -181,13 +181,14 @@ xGroup.addEventListener("change", e => {
 });
 
 yInput.addEventListener("input", () => {
-  const y = parseFloat(yInput.value);
-  if (isNaN(y) || y < -5 || y > 3) {
-    yInput.classList.add("invalid");
-  } else {
-    yInput.classList.remove("invalid");
-  }
-  saveState();
+    const yRaw = yInput.value.trim();
+    const y = parseFloat(yRaw.replace(',', '.'));
+    if (isNaN(y) || y < -5 || y > 3) {
+        yInput.classList.add("invalid");
+    } else {
+        yInput.classList.remove("invalid");
+    }
+    saveState();
 });
 
 rButtons.forEach(btn => {
@@ -211,7 +212,7 @@ form.addEventListener("submit", async e => {
   e.preventDefault();
 
   const selectedXs = [...xGroup.querySelectorAll("input:checked")].map(cb => parseFloat(cb.value));
-  const y = parseFloat(yInput.value);
+  const y = parseFloat(yInput.value.trim().replace(',', '.'));
   if (isNaN(y) || y < -5 || y > 3) {
     yInput.classList.add("invalid");
     alert("Введите корректное Y: от -5 до 3");
