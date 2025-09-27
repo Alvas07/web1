@@ -1,3 +1,4 @@
+// DOM-элементы и график
 const canvas = document.querySelector('.graph canvas');
 const ctx = canvas.getContext('2d');
 
@@ -10,13 +11,16 @@ const historyTbody = document.getElementById('history');
 const clearHistoryBtn = document.getElementById('clearHistory');
 const themeToggle = document.getElementById('themeToggle');
 
+// начальные значения
 let selectedR = 1;
 const AXIS_MIN = -6;
 const AXIS_MAX = 6;
+const MAX_HISTORY = 10;
 
-let points = []; // массив для хранения всех нарисованных точек
+// массив для хранения всех нарисованных точек
+let points = [];
 
-// === адаптивный canvas ===
+// адаптивный canvas
 function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
@@ -26,7 +30,7 @@ function resizeCanvas() {
   ctx.scale(dpr, dpr);
 }
 
-// === преобразование координат ===
+// преобразования координат X и Y
 function scaleX(x) {
   const rect = canvas.getBoundingClientRect();
   return rect.width / 2 + x * (rect.width / (2 * AXIS_MAX));
@@ -36,7 +40,7 @@ function scaleY(y) {
   return rect.height / 2 - y * (rect.height / (2 * AXIS_MAX));
 }
 
-// === оси ===
+// рисование осей
 function drawAxes() {
   const rect = canvas.getBoundingClientRect();
   const w = rect.width;
@@ -45,19 +49,19 @@ function drawAxes() {
   ctx.strokeStyle = "#000";
   ctx.lineWidth = 1;
 
-  // ось X
+  // X
   ctx.beginPath();
   ctx.moveTo(0, h / 2);
   ctx.lineTo(w, h / 2);
   ctx.stroke();
 
-  // ось Y
+  // Y
   ctx.beginPath();
   ctx.moveTo(w / 2, 0);
   ctx.lineTo(w / 2, h);
   ctx.stroke();
 
-  // подписи
+  // подписи осей
   ctx.fillStyle = "#000";
   ctx.font = "12px Arial";
   for (let i = AXIS_MIN; i <= AXIS_MAX; i++) {
@@ -67,7 +71,7 @@ function drawAxes() {
   }
 }
 
-// === область попадания ===
+// область попадания
 function drawArea() {
   const R = selectedR;
   ctx.fillStyle = "rgba(0,128,255,0.3)";
@@ -91,7 +95,7 @@ function drawArea() {
   ctx.fill();
 }
 
-// === точка ===
+// рисование точки
 function drawPoint(x, y, result) {
   ctx.beginPath();
   ctx.arc(scaleX(x), scaleY(y), 4, 0, 2 * Math.PI);
@@ -99,12 +103,12 @@ function drawPoint(x, y, result) {
   ctx.fill();
 }
 
-// перерисовать все сохранённые точки
+// перерисовка всех точек
 function drawPoints() {
   points.forEach(p => drawPoint(p.x, p.y, p.result));
 }
 
-// === история ===
+// история попаданий
 function addHistoryItem(item) {
   const { x, y, r, result, now, exec_time } = item;
   const emoji = result ? "✔️" : "❌";
@@ -121,13 +125,13 @@ function addHistoryItem(item) {
   `;
   historyTbody.prepend(row);
 
-  // ограничение: максимум 10 записей
-  while (historyTbody.children.length > 10) {
+  // ограничение на максимальное количество записей (10 штук)
+  while (historyTbody.children.length > MAX_HISTORY) {
     historyTbody.removeChild(historyTbody.lastChild);
   }
 }
 
-// === сохранение состояния ===
+// сохранение состояния страницы
 function saveState() {
   const selectedXs = [...xGroup.querySelectorAll("input:checked")].map(cb => parseFloat(cb.value));
   const state = {
@@ -140,7 +144,7 @@ function saveState() {
   localStorage.setItem("hitCheckerState", JSON.stringify(state));
 }
 
-// === загрузка состояния ===
+// загрузка состояния страницы
 function loadState() {
   const saved = localStorage.getItem("hitCheckerState");
   if (!saved) return;
@@ -169,7 +173,7 @@ function loadState() {
   }
 }
 
-// === события ===
+// слушатели событий
 xGroup.addEventListener("change", e => {
   if (e.target.tagName === "INPUT") {
     e.target.parentElement.classList.toggle("active", e.target.checked);
@@ -193,7 +197,7 @@ rButtons.forEach(btn => {
     btn.classList.add("active");
     selectedR = parseFloat(btn.dataset.r);
     saveState();
-    setupCanvas(); // перерисовка области + осей + текущих точек
+    setupCanvas();
   });
 });
 
@@ -203,7 +207,7 @@ themeToggle.addEventListener("click", () => {
   saveState();
 });
 
-// === форма ===
+// форма отправки данных
 form.addEventListener("submit", async e => {
   e.preventDefault();
 
@@ -214,9 +218,9 @@ form.addEventListener("submit", async e => {
     return;
   }
 
-  // удаляем старые точки перед новой проверкой
+  // удаление всех старых точек перед новой проверкой
   points = [];
-  setupCanvas(); // очистка канваса + перерисовка осей и области
+  setupCanvas();
 
   for (const x of selectedXs) {
     try {
@@ -233,10 +237,10 @@ form.addEventListener("submit", async e => {
         r: selectedR
       };
 
-      points.push(point);           // сохраняем точку
-      drawPoint(x, y, resultJSON.result); // рисуем точку
-      addHistoryItem(point);        // добавляем в историю
-      saveState();                  // сохраняем состояние
+      points.push(point);        
+      drawPoint(x, y, resultJSON.result); 
+      addHistoryItem(point);        
+      saveState();              
     } catch (err) {
       console.error("Ошибка запроса:", err);
       alert(err.message);
@@ -244,7 +248,7 @@ form.addEventListener("submit", async e => {
   }
 });
 
-// === очистка истории ===
+// очистка истории
 clearHistoryBtn.addEventListener("click", () => {
   historyTbody.innerHTML = "";
   points = [];
@@ -252,16 +256,14 @@ clearHistoryBtn.addEventListener("click", () => {
   saveState();
 });
 
-// === инициализация ===
+// инициализация
 function setupCanvas() {
   resizeCanvas();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawAxes();
   drawArea();
-  drawPoints(); // рисуем только точки из массива points (только новые)
+  drawPoints();
 }
-
-window.addEventListener("resize", setupCanvas);
 
 loadState();
 setupCanvas();

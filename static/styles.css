@@ -26,7 +26,7 @@ body {
     align-items: center;
     min-height: 100vh;
     transition: background 0.6s ease, color 0.6s ease;
-    overflow: hidden; /* убираем общий скролл */
+    overflow: hidden;
 }
 
 body::before {
@@ -156,7 +156,7 @@ main {
     margin: 0 auto;
     gap: 1rem;
     padding: 1rem;
-    height: calc(100vh - 80px); /* всё окно, минус хедер */
+    height: calc(100vh - 80px);
     box-sizing: border-box;
 }
 
@@ -169,7 +169,7 @@ main {
 }
 
 .controls {
-    flex: 0 0 320px; /* было 280px, увеличили */
+    flex: 0 0 320px;
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(15px);
     border-radius: 20px;
@@ -179,10 +179,10 @@ main {
 }
 
 .graph canvas {
-    aspect-ratio: 1 / 1;   /* квадрат */
+    aspect-ratio: 1 / 1;   
     width: 100%;
-    max-width: 500px;  /* было 400px */
-    max-height: 500px; /* было 400px */
+    max-width: 500px;  
+    max-height: 500px;
     border-radius: 12px;
     display: block;
 }
