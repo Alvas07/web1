@@ -124,39 +124,52 @@ function addHistoryItem(item) {
 }
 
 // сохранение состояния
-function saveState() {
-  const selectedXs = [...xGroup.querySelectorAll("input:checked")].map(cb => parseFloat(cb.value));
-  const state = {
-    theme: document.body.classList.contains("dark") ? "dark" : "light",
-    selectedR: selectedR,
-    selectedXs: selectedXs,
-    y: yInput.value,
-  };
-  localStorage.setItem("hitCheckerState", JSON.stringify(state));
+function saveState(points) {
+    const selectedXs = [...xGroup.querySelectorAll("input:checked")].map(cb => parseFloat(cb.value));
+    const state = {
+        theme: document.body.classList.contains("dark") ? "dark" : "light",
+        selectedR: selectedR,
+        selectedXs: selectedXs,
+        y: yInput.value,
+        lastPoints: points,        
+        historyHTML: historyTbody.innerHTML 
+    };
+    localStorage.setItem("hitCheckerState", JSON.stringify(state));
 }
 
 // загрузка состояния
 function loadState() {
-  const saved = localStorage.getItem("hitCheckerState");
-  if (!saved) return;
-  try {
-    const state = JSON.parse(saved);
-    if (state.theme === "dark") {
-      document.body.classList.add("dark");
-      themeToggle.textContent = "☀️ Светлая";
+    const saved = localStorage.getItem("hitCheckerState");
+    if (!saved) return;
+    try {
+        const state = JSON.parse(saved);
+        if (state.theme === "dark") {
+            document.body.classList.add("dark");
+            themeToggle.textContent = "☀️ Светлая";
+        }
+        if (state.selectedR) selectedR = state.selectedR;
+        rButtons.forEach(btn => btn.classList.toggle("active", parseFloat(btn.dataset.r) === selectedR));
+
+        if (state.selectedXs) {
+            xGroupInputs.forEach(cb => {
+                cb.checked = state.selectedXs.includes(parseFloat(cb.value));
+                cb.parentElement.classList.toggle("active", cb.checked);
+            });
+        }
+        if (state.y !== undefined) yInput.value = state.y;
+
+        setupCanvas();
+
+        if (state.lastPoints) {
+            state.lastPoints.forEach(p => drawPoint(p.x, p.y, p.result));
+        }
+
+        if (state.historyHTML) {
+            historyTbody.innerHTML = state.historyHTML;
+        }
+    } catch (e) {
+        console.error("Ошибка восстановления состояния:", e);
     }
-    if (state.selectedR) selectedR = state.selectedR;
-    rButtons.forEach(btn => btn.classList.toggle("active", parseFloat(btn.dataset.r) === selectedR));
-    if (state.selectedXs) {
-      xGroupInputs.forEach(cb => {
-        cb.checked = state.selectedXs.includes(parseFloat(cb.value));
-        cb.parentElement.classList.toggle("active", cb.checked);
-      });
-    }
-    if (state.y !== undefined) yInput.value = state.y;
-  } catch (e) {
-    console.error("Ошибка восстановления:", e);
-  }
 }
 
 // слушатели событий
@@ -199,10 +212,24 @@ form.addEventListener("submit", async e => {
 
   const selectedXs = [...xGroup.querySelectorAll("input:checked")].map(cb => parseFloat(cb.value));
   const y = parseFloat(yInput.value);
-  if (isNaN(y) || selectedXs.length === 0 || !selectedR) {
-    alert("Выберите хотя бы один X, введите корректный Y и выберите R.");
+  if (isNaN(y) || y < -5 || y > 3) {
+    yInput.classList.add("invalid");
+    alert("Введите корректное Y: от -5 до 3");
+    return; 
+  } else {
+    yInput.classList.remove("invalid");
+  }
+
+  if (selectedXs.length === 0) {
+    alert("Выберите хотя бы один X.");
     return;
   }
+
+  if (!selectedR) {
+    alert("Выберите значение R.");
+    return;
+  }
+
 
   setupCanvas();
 
@@ -215,18 +242,17 @@ form.addEventListener("submit", async e => {
     }
     const resultJSON = await response.json();
 
-    // отрисовка точек и добавление истории после получения ответа
-    resultJSON.results.forEach(p => {
-    drawPoint(p.x, p.y, p.result);
-    addHistoryItem({
-        x: p.x,
-        y: p.y,
-        r: selectedR,
-        result: p.result,
-        now: resultJSON.now,
-        exec_time: resultJSON.exec_time
+    let currentPoints = []; // точки текущей проверки
+
+    // После успешного ответа от сервера:
+    currentPoints = resultJSON.results.map(p => {
+        drawPoint(p.x, p.y, p.result);
+        addHistoryItem({ ...p, r: selectedR, now: resultJSON.now, exec_time: resultJSON.exec_time });
+        return p;
     });
-});
+
+    // Сохраняем состояние
+    saveState(currentPoints);
 
   } catch (err) {
     console.error("Ошибка запроса:", err);
