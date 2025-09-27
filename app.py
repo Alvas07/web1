@@ -20,7 +20,7 @@ def check_point():
     start_time = time.perf_counter()
 
     try:
-        x = int(request.args.get("x"))
+        xs = request.args.getlist("x", type=int)
         y = float(request.args.get("y"))
         r = int(request.args.get("r"))
     except (TypeError, ValueError):
@@ -29,17 +29,27 @@ def check_point():
             "reason": "Invalid params"
         }), 400
 
-    result = hit_checker.is_hit(x, y, r)
-
-    exec_time = round((time.perf_counter() - start_time) * 1000, 3)
+    results = []
     now = datetime.datetime.now().strftime("%H:%M:%S")
 
-    history_manager.add_to_history(x, y, r, result, now, exec_time)
+    for x in xs:
+        result = hit_checker.is_hit(x, y, r)
+        record = {
+            "x": x,
+            "y": y,
+            "r": r,
+            "result": result,
+            "now": now
+        }
+        history_manager.add_to_history(record)
+        results.append(record)
+
+    exec_time = round((time.perf_counter() - start_time) * 1000, 3)
 
     return jsonify({
         "exec_time": exec_time,
         "now": now,
-        "result": result,
+        "results": results,
         "history": history_manager.get_history()
     })
 

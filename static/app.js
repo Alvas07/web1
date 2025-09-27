@@ -1,4 +1,4 @@
-// DOM-элементы и график
+// DOM-элементы
 const canvas = document.querySelector('.graph canvas');
 const ctx = canvas.getContext('2d');
 
@@ -17,9 +17,6 @@ const AXIS_MIN = -6;
 const AXIS_MAX = 6;
 const MAX_HISTORY = 10;
 
-// массив для хранения всех нарисованных точек
-let points = [];
-
 // адаптивный canvas
 function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
@@ -30,7 +27,7 @@ function resizeCanvas() {
   ctx.scale(dpr, dpr);
 }
 
-// преобразования координат X и Y
+// преобразование координат
 function scaleX(x) {
   const rect = canvas.getBoundingClientRect();
   return rect.width / 2 + x * (rect.width / (2 * AXIS_MAX));
@@ -40,7 +37,7 @@ function scaleY(y) {
   return rect.height / 2 - y * (rect.height / (2 * AXIS_MAX));
 }
 
-// рисование осей
+// отображение осей
 function drawAxes() {
   const rect = canvas.getBoundingClientRect();
   const w = rect.width;
@@ -49,13 +46,13 @@ function drawAxes() {
   ctx.strokeStyle = "#000";
   ctx.lineWidth = 1;
 
-  // X
+  // ось X
   ctx.beginPath();
   ctx.moveTo(0, h / 2);
   ctx.lineTo(w, h / 2);
   ctx.stroke();
 
-  // Y
+  // ось Y
   ctx.beginPath();
   ctx.moveTo(w / 2, 0);
   ctx.lineTo(w / 2, h);
@@ -90,22 +87,17 @@ function drawArea() {
   // четверть круга
   ctx.beginPath();
   ctx.moveTo(scaleX(0), scaleY(0));
-  ctx.arc(scaleX(0), scaleY(0), scaleX(R / 2) - scaleX(0), Math.PI, 1.5 * Math.PI, false);
+  ctx.arc(scaleX(0), scaleY(0), scaleX(R / 2) - scaleX(0), Math.PI, Math.PI * 1.5, false);
   ctx.closePath();
   ctx.fill();
 }
 
-// рисование точки
+// отрисовка точки
 function drawPoint(x, y, result) {
   ctx.beginPath();
   ctx.arc(scaleX(x), scaleY(y), 4, 0, 2 * Math.PI);
   ctx.fillStyle = result ? "green" : "red";
   ctx.fill();
-}
-
-// перерисовка всех точек
-function drawPoints() {
-  points.forEach(p => drawPoint(p.x, p.y, p.result));
 }
 
 // история попаданий
@@ -125,13 +117,13 @@ function addHistoryItem(item) {
   `;
   historyTbody.prepend(row);
 
-  // ограничение на максимальное количество записей (10 штук)
+  // максимальное количество строк в таблице (10)
   while (historyTbody.children.length > MAX_HISTORY) {
     historyTbody.removeChild(historyTbody.lastChild);
   }
 }
 
-// сохранение состояния страницы
+// сохранение состояния
 function saveState() {
   const selectedXs = [...xGroup.querySelectorAll("input:checked")].map(cb => parseFloat(cb.value));
   const state = {
@@ -139,12 +131,11 @@ function saveState() {
     selectedR: selectedR,
     selectedXs: selectedXs,
     y: yInput.value,
-    points: points
   };
   localStorage.setItem("hitCheckerState", JSON.stringify(state));
 }
 
-// загрузка состояния страницы
+// загрузка состояния
 function loadState() {
   const saved = localStorage.getItem("hitCheckerState");
   if (!saved) return;
@@ -163,11 +154,6 @@ function loadState() {
       });
     }
     if (state.y !== undefined) yInput.value = state.y;
-    if (state.points) {
-      points = state.points;
-      historyTbody.innerHTML = "";
-      points.slice(-10).reverse().forEach(p => addHistoryItem(p));
-    }
   } catch (e) {
     console.error("Ошибка восстановления:", e);
   }
@@ -207,7 +193,7 @@ themeToggle.addEventListener("click", () => {
   saveState();
 });
 
-// форма отправки данных
+// отправка формы
 form.addEventListener("submit", async e => {
   e.preventDefault();
 
@@ -218,40 +204,39 @@ form.addEventListener("submit", async e => {
     return;
   }
 
-  // удаление всех старых точек перед новой проверкой
-  points = [];
   setupCanvas();
 
-  for (const x of selectedXs) {
-    try {
-      const response = await fetch(`/api/check?x=${x}&y=${y.toFixed(2)}&r=${selectedR}`);
-      if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
-      const resultJSON = await response.json();
-
-      const point = { 
-        x, 
-        y, 
-        result: resultJSON.result,
-        now: resultJSON.now,
-        exec_time: resultJSON.exec_time,
-        r: selectedR
-      };
-
-      points.push(point);        
-      drawPoint(x, y, resultJSON.result); 
-      addHistoryItem(point);        
-      saveState();              
-    } catch (err) {
-      console.error("Ошибка запроса:", err);
-      alert(err.message);
+  try {
+    const query = selectedXs.map(x => `x=${x}`).join("&") + `&y=${y.toFixed(2)}&r=${selectedR}`;
+    const response = await fetch(`/api/check?${query}`);
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Ошибка сервера: ${response.status} ${text}`);
     }
+    const resultJSON = await response.json();
+
+    // отрисовка точек и добавление истории после получения ответа
+    resultJSON.results.forEach(p => {
+    drawPoint(p.x, p.y, p.result);
+    addHistoryItem({
+        x: p.x,
+        y: p.y,
+        r: selectedR,
+        result: p.result,
+        now: resultJSON.now,
+        exec_time: resultJSON.exec_time
+    });
+});
+
+  } catch (err) {
+    console.error("Ошибка запроса:", err);
+    alert(err.message);
   }
 });
 
 // очистка истории
 clearHistoryBtn.addEventListener("click", () => {
   historyTbody.innerHTML = "";
-  points = [];
   setupCanvas();
   saveState();
 });
@@ -262,7 +247,6 @@ function setupCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawAxes();
   drawArea();
-  drawPoints();
 }
 
 loadState();
