@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HitChecker</title>
-    <link rel="stylesheet" href="../static/styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <header>
@@ -61,25 +61,27 @@
         </div>
         
         <section class="history">
-            <div class="history-card">
+            <div class="history-header">
                 <h2>История попаданий</h2>
                 <button id="clearHistory">🗑 Очистить</button>
+            </div>
+            <div class="history-table-wrapper">
                 <table id="history-table">
                     <thead>
-                    <tr>
-                        <th>Время</th>
-                        <th>Результат</th>
-                        <th>X</th>
-                        <th>Y</th>
-                        <th>R</th>
-                        <th>Выполнение (мс)</th>
-                    </tr>
+                        <tr>
+                            <th>Время</th>
+                            <th>Результат</th>
+                            <th>X</th>
+                            <th>Y</th>
+                            <th>R</th>
+                            <th>Выполнение (мс)</th>
+                        </tr>
                     </thead>
                     <tbody id="history"></tbody>
                 </table>
             </div>
         </section>
     </main>
-    <script src="../static/app.js"></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

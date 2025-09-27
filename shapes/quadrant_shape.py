@@ -1,7 +1,7 @@
 from .base import Shape
 
 
-class QuadrantShape:
+class QuadrantShape(Shape):
     """Class for any geometric figure relative to quadrant"""
 
     def __init__(self, shape: Shape, quadrant: int):

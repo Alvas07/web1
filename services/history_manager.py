@@ -1,15 +1,14 @@
 from collections import deque
-from typing import Dict, Any
+from shapes import Point
 
 class HistoryManager:
     """Class for storing history"""
 
-    def __init__(self, max_history: int = 10):
-        self.max_history = max_history
-        self.history: deque[Dict[str, Any]] = deque(maxlen=max_history)
+    def __init__(self):
+        self.history: deque[Point] = deque()
 
-    def add_to_history(self, record: Dict[str, Any]) -> None:
+    def add_to_history(self, record: Point) -> None:
         self.history.appendleft(record)
 
-    def get_history(self) -> list[Dict[str, Any]]:
+    def get_history(self) -> list[Point]:
         return list(self.history)
