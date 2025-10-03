@@ -1,0 +1,248 @@
+:root {
+    --bg: #f0f4ff;
+    --card: rgba(255, 255, 255, 0.7);
+    --text: #1a1a1a;
+    --accent: #007aff;
+    --hit: #2ecc71;
+    --miss: #e74c3c;
+    --axis: #333;
+}
+
+body.dark {
+    --bg: #0a0f1a;
+    --card: rgba(20, 20, 30, 0.6);
+    --text: #f5f5f5;
+    --accent: #0a84ff;
+    --axis: #aaa;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro", sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    transition: background 0.6s ease, color 0.6s ease;
+    overflow: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at top left, #00f, transparent 70%),
+                radial-gradient(circle at bottom right, #ff0080, transparent 70%);
+    filter: blur(120px);
+    z-index: -1;
+    transition: background 1s ease;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 1200px;
+    margin: 1rem auto 0 auto;
+    padding: 0 1rem;
+    position: relative;
+}
+
+.header-left h1 {
+    font-size: 1.2rem;
+    font-family: fantasy;
+    color: var(--text);
+    margin: 0;
+}
+
+.header-right {
+    margin-left: auto;
+}
+
+.card {
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin: 1rem;
+    width: 90%;
+    max-width: 1000px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    transition: background 0.4s ease, color 0.4s ease;
+}
+
+.form-group {
+    margin: 1rem 0;
+}
+
+input[type="text"] {
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid var(--accent);
+    outline: none;
+    transition: background 0.4s ease;
+}
+
+input.invalid {
+    border-color: var(--miss);
+    background: rgba(255, 0, 0, 0.1);
+}
+
+button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+button:hover, .r-button:hover {
+    transform: scale(1.05);
+}
+
+.r-button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.r-button.active {
+    background: #e025ab;
+    color: #000;
+}
+
+.x-option {
+    margin: 0 6px;
+}
+
+.x-option input {
+    margin-right: 4px;
+}
+
+#history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+}
+
+#history-table th, #history-table td {
+    padding: 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.history-item.hit {
+    background: rgba(46, 204, 113, 0.2);
+}
+
+.history-item.miss {
+    background: rgba(231, 76, 60, 0.2);
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 1rem;
+    padding: 1rem;
+    height: calc(100vh - 80px);
+    box-sizing: border-box;
+}
+
+.top-section {
+    flex: 1 1 auto;
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.controls {
+    flex: 0 0 320px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    padding: 1rem;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    overflow-y: auto;
+}
+
+.graph canvas {
+    aspect-ratio: 1 / 1;   
+    width: 100%;
+    max-width: 500px;  
+    max-height: 500px;
+    border-radius: 12px;
+    display: block;
+}
+
+.graph {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+
+.history {
+    width: 100%;
+    max-height: 220px; /* или нужная высота */
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    padding: 1rem;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+
+    display: flex;
+    flex-direction: column;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    flex: 0 0 auto; /* фиксируем верхнюю панель */
+}
+
+.history-table-wrapper {
+    overflow-y: auto;
+    flex: 1 1 auto; /* таблица растягивается на оставшееся место */
+}
+
+#history-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#history-table th, #history-table td {
+    padding: 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.card, .controls, .graph, .history {
+    color: var(--text);
+}
+
+body.dark .card,
+body.dark .controls,
+body.dark .graph,
+body.dark .history {
+    color: #1a1a1a;
+}
