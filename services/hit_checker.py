@@ -1,5 +1,6 @@
 from shapes import Shape
 from typing import List
+from shapes import Point
 
 
 class HitChecker:
@@ -8,5 +9,5 @@ class HitChecker:
     def __init__(self, shapes: List[Shape]):
         self.shapes = shapes
 
-    def is_hit(self, x: int, y: float, r: int) -> bool:
-        return any(shape.contains(x, y, r) for shape in self.shapes)
+    def is_hit(self, point: Point) -> bool:
+        return any(shape.contains(point) for shape in self.shapes)

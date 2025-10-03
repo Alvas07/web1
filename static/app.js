@@ -15,76 +15,106 @@ const themeToggle = document.getElementById('themeToggle');
 let selectedR = 1;
 const AXIS_MIN = -6;
 const AXIS_MAX = 6;
-const MAX_HISTORY = 10;
 
-// cookies
-function setCookie(name, value, days=1) {
-    const d = new Date();
-    d.setTime(d.getTime() + (days*24*60*60*1000));
-    document.cookie = `${name}=${encodeURIComponent(value)};path=/;expires=${d.toUTCString()}`;
+// fetch c отловом ошибок
+async function fetchWithAlert(url) {
+    const res = await fetch(url);
+    if (!res.ok) {
+        let msg;
+        try {
+            const data = await res.json();
+            msg = data.reason || data.error || JSON.stringify(data);
+        } catch {
+            msg = await res.text()
+        }
+        alert(`Ошибка: ${res.status} ${msg}`);
+        throw new Error(msg);
+    }
+    return res;
 }
 
-function getCookie(name) {
-    const match = document.cookie.match(new RegExp('(^| )'+name+'=([^;]+)'));
-    return match ? decodeURIComponent(match[2]) : null;
-}
-
-// сохранение состояния в cookies
-function saveState(lastPoints=[]) {
+// сохранение состояния
+async function saveState() {
     const selectedXs = [...xGroup.querySelectorAll("input:checked")].map(cb=>parseFloat(cb.value));
-    const ui_state = {
-        selectedXs,
-        y: yInput.value,
-        r: selectedR,
-        lastPoints,
-        theme: document.body.classList.contains("dark")?"dark":"light",
-        historyHTML: historyTbody.innerHTML
-    };
-    setCookie("uiState", JSON.stringify(ui_state),1);
+    const theme = document.body.classList.contains("dark") ? "dark":"light";
+    const yRaw = yInput.value.trim();
+    const y = yRaw === "" ? "" : parseFloat(yRaw.replace(',','.'));
+    
+    const params = new URLSearchParams();
+    params.append("selectedXs", selectedXs.join(","));
+    params.append("y", y === "" ? "" : y.toFixed(2));
+    params.append("r", selectedR);
+    params.append("theme", theme);
+
+    await fetchWithAlert(`/api/state/update?${params.toString()}`);
 }
 
-// загрузка состояние из cookies
-function loadState() {
-    const saved = getCookie("uiState");
-    if(!saved) return;
-    try{
-        const state = JSON.parse(saved);
+// загрузка состояния
+async function loadState() {
+    try {
+        const res = await fetchWithAlert('/api/state/get');
+        const state = await res.json();
 
         // тема
         if(state.theme==="dark"){
             document.body.classList.add("dark");
-            themeToggle.textContent="☀️ Светлая";
+            themeToggle.textContent = "☀️ Светлая";
+        } else {
+            document.body.classList.remove("dark");
+            themeToggle.textContent = "🌙 Тёмная";
         }
 
-        // X чекбоксы
-        if(state.selectedXs){
-            xGroupInputs.forEach(cb=>{
+        // X
+        if (state.selectedXs) {
+            xGroupInputs.forEach(cb => {
                 cb.checked = state.selectedXs.includes(parseFloat(cb.value));
                 cb.parentElement.classList.toggle("active", cb.checked);
             });
         }
 
         // Y
-        if(state.y!==undefined) yInput.value = state.y;
+        if(state.y !== null && state.y !== undefined && state.y !== ""){
+            yInput.value = state.y;
+
+            const yVal = parseFloat(state.y);
+            if(isNaN(yVal) || yVal < -5 || yVal > 3){
+                yInput.classList.add("invalid");
+            } else {
+                yInput.classList.remove("invalid");
+            }
+        } else {
+            yInput.value = "";
+            yInput.classList.remove("invalid");
+        }
 
         // R
-        if(state.r) selectedR = state.r;
-        rButtons.forEach(btn=>btn.classList.toggle("active", parseFloat(btn.dataset.r)===selectedR));
+        if (state.r) {
+            selectedR = state.r;
+            rButtons.forEach(b => b.classList.toggle("active", parseFloat(b.dataset.r) === selectedR));
+        }
 
         // canvas
         setupCanvas();
 
-        // точки последней проверки
-        if(state.lastPoints){
-            state.lastPoints.forEach(p=>drawPoint(p.x,p.y,p.result));
-        }
-
         // история
-        if(state.historyHTML){
-            historyTbody.innerHTML = state.historyHTML;
-        }
+        await loadHistory();
+    } catch (err) {
+        console.error("Ошибка при загрузке состояния:", err);
+    }
+}
 
-    }catch(e){console.error("Ошибка восстановления состояния:",e);}
+// загрузка истории
+async function loadHistory() {
+    const res = await fetchWithAlert('/api/history/get');
+    const history = await res.json();
+
+    history.sort((a, b) => new Date(a.now) - new Date(b.now));
+    
+    historyTbody.innerHTML = "";
+    history.forEach(item => {
+        addHistoryItem(item);
+        drawPoint(item.point.x, item.point.y, item.result);
+    });
 }
 
 // canvas
@@ -146,16 +176,13 @@ function drawPoint(x,y,result) {
 
 // история попаданий
 function addHistoryItem(item) {
-  const { x, y, r, result, now, exec_time } = item;
+  const { point, result, now, exec_time } = item;
+  const { x, y, r } = point;
   const emoji = result?"✔️":"❌";
   const row = document.createElement("tr");
   row.className = result?"history-item hit":"history-item miss";
   row.innerHTML = `<td>${now}</td><td>${emoji}</td><td>${x}</td><td>${y.toFixed(2)}</td><td>${r}</td><td>${exec_time} ms</td>`;
   historyTbody.prepend(row);
-
-  while(historyTbody.children.length>MAX_HISTORY){
-    historyTbody.removeChild(historyTbody.lastChild);
-  }
 }
 
 // слушатели событий
@@ -210,22 +237,18 @@ form.addEventListener("submit", async e=>{
 
     try {
         const query = selectedXs.map(x=>`x=${x}`).join("&") + `&y=${y.toFixed(2)}&r=${selectedR}`;
-        const response = await fetch(`/api/check?${query}`);
-        if(!response.ok){
-            const text = await response.text();
-            throw new Error(`Ошибка сервера: ${response.status} ${text}`);
-        }
+        const response = await fetchWithAlert(`/api/check?${query}`);
         const resultJSON = await response.json();
 
         let currentPoints = [];
 
-        resultJSON.results.forEach(p=>{
-            drawPoint(p.x,p.y,p.result);
-            addHistoryItem({...p, r:selectedR, now:resultJSON.now, exec_time:resultJSON.exec_time});
-            currentPoints.push(p);
+        resultJSON.results.forEach(e=>{
+            drawPoint(e.point.x,e.point.y,e.result);
+            addHistoryItem({...e, exec_time:resultJSON.exec_time});
+            currentPoints.push(e);
         });
 
-        saveState(currentPoints);
+        saveState();
 
     } catch(err){
         console.error(err);
@@ -234,7 +257,8 @@ form.addEventListener("submit", async e=>{
 });
 
 // очистка истории
-clearHistoryBtn.addEventListener("click", ()=>{
+clearHistoryBtn.addEventListener("click", async ()=>{
+    await fetchWithAlert("/api/history/clear");
     historyTbody.innerHTML="";
     setupCanvas();
     saveState();
@@ -247,6 +271,7 @@ function setupCanvas(){
     drawAxes();
     drawArea();
 }
-
-loadState();
-setupCanvas();
+document.addEventListener("DOMContentLoaded", async ()=>{
+    await loadState();
+    setupCanvas();
+});

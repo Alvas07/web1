@@ -1,19 +1,10 @@
 from dataclasses import dataclass
-from datetime import datetime
+from typing import Optional
 
 @dataclass
 class Point:
+    """Class for point in 2D space"""
+
     x: int
     y: float
     r: int
-    result: bool
-    now: datetime
-
-    def to_dict(self):
-        return {
-            "x": self.x,
-            "y": self.y,
-            "r": self.r,
-            "result": self.result,
-            "now": self.now
-        }

@@ -1,4 +1,5 @@
 from .base import Shape
+from .point import Point
 
 
 class QuadrantShape(Shape):
@@ -8,12 +9,12 @@ class QuadrantShape(Shape):
         self.shape = shape
         self.quadrant = quadrant
 
-    def contains(self, x: int, y: float, r: int) -> bool:
-        tx, ty = x, y
+    def contains(self, point: Point) -> bool:
+        x, y = point.x, point.y
         if self.quadrant == 2:
-            tx, ty = -x, y
+            x, y = -point.x, point.y
         elif self.quadrant == 3:
-            tx, ty = -x, -y
+            x, y = -point.x, -point.y
         elif self.quadrant == 4:
-            tx, ty = x, -y
-        return self.shape.contains(tx, ty, r)
+            x, y = point.x, -point.y
+        return self.shape.contains(Point(x, y, point.r))
