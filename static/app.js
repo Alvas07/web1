@@ -194,13 +194,32 @@ xGroup.addEventListener("change", e => {
 });
 
 yInput.addEventListener("input", ()=>{
-    const yRaw = yInput.value.trim();
-    const y = parseFloat(yRaw.replace(',','.'));
-    if(isNaN(y) || y<-5 || y>3){
+    let val = yInput.value;
+
+    val = val.replace(/[^0-9.,-]/g, "");
+
+    if (val.includes("-")) {
+        val = "-" + val.replace(/-/g, "");
+    }
+
+    val = val.replace(",", ".");
+
+    const firstDot = val.indexOf(".");
+    if (firstDot !== -1) {
+        val = val.slice(0, firstDot + 1) + val.slice(firstDot + 1).replace(/\./g, "");
+    }
+
+    val = val.replace(/^(-?)0+(\d)/, "$1$2");
+
+    yInput.value = val;
+
+    const y = parseFloat(val);
+    if (isNaN(y) || y < -5 || y > 3) {
         yInput.classList.add("invalid");
     } else {
         yInput.classList.remove("invalid");
     }
+
     saveState();
 });
 
